@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function role() { return request.auth.token.role; }
+    function isAdmin() { return role() == 'admin'; }
+    function sameTeam(resource) { return resource.data.teamId == request.auth.token.teamId; }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == uid);
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    match /teams/{teamId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    match /patients/{pid} {
+      allow read: if isSignedIn() && (isAdmin() || sameTeam(resource));
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    match /communications/{cid} {
+      allow read: if isSignedIn() && (isAdmin() || sameTeam(resource));
+
+      allow create: if isSignedIn() &&
+        (isAdmin() || role() == 'coordinator') &&
+        request.resource.data.teamId == request.auth.token.teamId;
+
+      allow update: if isSignedIn() &&
+        (isAdmin() || role() in ['clinician','coordinator']) &&
+        sameTeam(resource) &&
+        request.resource.data.keys().hasOnly(
+          ['status','clinicianId','title','addressee','messageText','dateReceived']
+        ) &&
+        request.resource.data.teamId == resource.data.teamId &&
+        request.resource.data.patientId == resource.data.patientId;
+
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    match /auditLogs/{id} {
+      allow read: if isSignedIn() && isAdmin();
+      allow write: if false;
+    }
+  }
+}

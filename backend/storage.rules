@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return request.auth.token.role == 'admin'; }
+    function sameTeam(commId) {
+      return get(/databases/(default)/documents/communications/$(commId)).data.teamId
+             == request.auth.token.teamId;
+    }
+    match /communications/{commId}/attachments/{file} {
+      allow read: if isSignedIn() && (isAdmin() || sameTeam(commId));
+      allow write: if isSignedIn() && (isAdmin() || sameTeam(commId));
+    }
+  }
+}
