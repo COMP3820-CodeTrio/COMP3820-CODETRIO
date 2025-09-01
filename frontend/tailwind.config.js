@@ -1,3 +1,4 @@
+// frontend/tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -8,7 +9,7 @@ export default {
     extend: {
       colors: {
         'status-blue': '#1e40af',
-        'status-orange': '#ea580c',
+        'status-orange': '#ea580c', 
         'status-green': '#16a34a',
         'status-red': '#dc2626',
       }
